@@ -32,6 +32,8 @@
 #include <linux/export.h>
 #include <linux/swap.h>
 #include <linux/aio.h>
+#include <linux/statfs.h>
+#include <linux/path.h>
 
 static struct vfsmount *shm_mnt;
 
@@ -1356,6 +1358,20 @@ out_nomem:
 
 static int shmem_mmap(struct file *file, struct vm_area_struct *vma)
 {
+	if (!(vma->vm_flags & VM_NORESERVE) &&
+	    sysctl_overcommit_memory == OVERCOMMIT_NEVER) {
+		struct inode *inode = file_inode(file);
+		struct kstatfs sbuf;
+		u64 size;
+
+		inode->i_sb->s_op->statfs(file->f_dentry, &sbuf);
+		size = sbuf.f_bfree * sbuf.f_bsize;
+
+		if (size < inode->i_size) {
+			return -ENOMEM;
+		}
+	}
+
 	file_accessed(file);
 	vma->vm_ops = &shmem_vm_ops;
 	return 0;
