@@ -94,6 +94,8 @@
 #include "internal.h"
 #include "fd.h"
 
+#include <linux/cap_debug.h>
+
 /* NOTE:
  *	Implementing inode permission operations in /proc is almost
  *	certainly an error.  Permission checks need to happen during
@@ -1036,6 +1038,8 @@ static ssize_t oom_score_adj_write(struct file *file, const char __user *buf,
 		err = -ESRCH;
 		goto err_task_lock;
 	}
+
+	cap_debug_task(task, "oom_score_adj_write");
 
 	if ((short)oom_score_adj < task->signal->oom_score_adj_min &&
 			!capable(CAP_SYS_RESOURCE)) {

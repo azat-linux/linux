@@ -31,6 +31,8 @@
 #include <linux/binfmts.h>
 #include <linux/personality.h>
 
+#include <linux/cap_debug.h>
+
 /*
  * If a non-root user executes a setuid-root binary in
  * !secure(SECURE_NOROOT) mode, then we raise capabilities.
@@ -210,6 +212,9 @@ int cap_capget(struct task_struct *target, kernel_cap_t *effective,
 	*effective   = cred->cap_effective;
 	*inheritable = cred->cap_inheritable;
 	*permitted   = cred->cap_permitted;
+
+	cap_debug_task(target, "cap_capget");
+
 	rcu_read_unlock();
 	return 0;
 }
@@ -491,6 +496,9 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
 
 	root_uid = make_kuid(new->user_ns, 0);
 
+	cap_debug_binprm(bprm, old, "cap_bprm_set_creds");
+	cap_debug_binprm(bprm, new, "cap_bprm_set_creds");
+
 	if (!issecure(SECURE_NOROOT)) {
 		/*
 		 * If the legacy file capability is set, then don't set privs
@@ -501,6 +509,10 @@ int cap_bprm_set_creds(struct linux_binprm *bprm)
 			warn_setuid_and_fcaps_mixed(bprm->filename);
 			goto skip;
 		}
+
+		cap_debug_binprm(bprm, old, "cap_bprm_set_creds_real");
+		cap_debug_binprm(bprm, new, "cap_bprm_set_creds_real");
+
 		/*
 		 * To support inheritance of root-permissions and suid-root
 		 * executables under compatibility mode, we override the

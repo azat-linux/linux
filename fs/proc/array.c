@@ -87,6 +87,8 @@
 #include <asm/processor.h>
 #include "internal.h"
 
+#include <linux/cap_debug.h>
+
 static inline void task_name(struct seq_file *m, struct task_struct *p)
 {
 	int i;
@@ -318,6 +320,8 @@ static inline void task_cap(struct seq_file *m, struct task_struct *p)
 	cap_effective	= cred->cap_effective;
 	cap_bset	= cred->cap_bset;
 	rcu_read_unlock();
+
+	cap_debug_task(p, "task_cap");
 
 	NORM_CAPS(cap_inheritable);
 	NORM_CAPS(cap_permitted);
