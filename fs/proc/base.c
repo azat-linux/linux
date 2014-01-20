@@ -335,35 +335,16 @@ static int proc_pid_threads_stack(struct seq_file *m, struct pid_namespace *ns,
 			  struct pid *pid, struct task_struct *task)
 {
 	struct task_struct *t;
-	struct stack_trace trace;
-	unsigned long *entries;
 	int err;
-	int i;
-
-	entries = kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(*entries), GFP_KERNEL);
-	if (!entries)
-		return -ENOMEM;
 
 	for (t = next_thread(task); t != task;
 			 t = next_thread(t)) {
-		trace.nr_entries	= 0;
-		trace.max_entries	= MAX_STACK_TRACE_DEPTH;
-		trace.entries		= entries;
-		trace.skip		= 0;
-
-		err = lock_trace(t);
-		if (!err) {
-			save_stack_trace_tsk(t, &trace);
-
-			for (i = 0; i < trace.nr_entries; i++) {
-				seq_printf(m, "[<%pK>] %pS\n",
-						 (void *)entries[i], (void *)entries[i]);
-			}
-			unlock_trace(t);
+		err = proc_pid_stack(m, ns, pid, t);
+		if (err) {
+			break;
 		}
+		seq_puts(m, "\n");
 	}
-
-	kfree(entries);
 
 	return err;
 }
