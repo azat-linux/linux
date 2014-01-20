@@ -330,6 +330,44 @@ static int proc_pid_stack(struct seq_file *m, struct pid_namespace *ns,
 
 	return err;
 }
+
+static int proc_pid_threads_stack(struct seq_file *m, struct pid_namespace *ns,
+			  struct pid *pid, struct task_struct *task)
+{
+	struct task_struct *t;
+	struct stack_trace trace;
+	unsigned long *entries;
+	int err;
+	int i;
+
+	entries = kmalloc(MAX_STACK_TRACE_DEPTH * sizeof(*entries), GFP_KERNEL);
+	if (!entries)
+		return -ENOMEM;
+
+	for (t = next_thread(task); t != task;
+			 t = next_thread(t)) {
+		trace.nr_entries	= 0;
+		trace.max_entries	= MAX_STACK_TRACE_DEPTH;
+		trace.entries		= entries;
+		trace.skip		= 0;
+
+		err = lock_trace(t);
+		if (!err) {
+			save_stack_trace_tsk(t, &trace);
+
+			for (i = 0; i < trace.nr_entries; i++) {
+				seq_printf(m, "[<%pK>] %pS\n",
+						 (void *)entries[i], (void *)entries[i]);
+			}
+			unlock_trace(t);
+		}
+	}
+
+	kfree(entries);
+
+	return err;
+}
+
 #endif
 
 #ifdef CONFIG_SCHEDSTATS
@@ -2621,6 +2659,7 @@ static const struct pid_entry tgid_base_stuff[] = {
 #endif
 #ifdef CONFIG_STACKTRACE
 	ONE("stack",      S_IRUGO, proc_pid_stack),
+	ONE("threads_stack",      S_IRUGO, proc_pid_threads_stack),
 #endif
 #ifdef CONFIG_SCHEDSTATS
 	INF("schedstat",  S_IRUGO, proc_pid_schedstat),
@@ -2959,6 +2998,7 @@ static const struct pid_entry tid_base_stuff[] = {
 #endif
 #ifdef CONFIG_STACKTRACE
 	ONE("stack",      S_IRUGO, proc_pid_stack),
+	ONE("threads_stack",      S_IRUGO, proc_pid_threads_stack),
 #endif
 #ifdef CONFIG_SCHEDSTATS
 	INF("schedstat", S_IRUGO, proc_pid_schedstat),
