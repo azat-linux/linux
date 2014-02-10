@@ -3838,14 +3838,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 
 	bgl_lock_init(sbi->s_blockgroup_lock);
 
-	ext4_ext_init(sb);
-	err = ext4_mb_init(sb);
-	if (err) {
-		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
-			 err);
-		goto failed_mount;
-	}
-
 	for (i = 0; i < db_count; i++) {
 		block = descriptor_loc(sb, logical_sb_block, i);
 		sbi->s_group_desc[i] = sb_bread(sb, block);
@@ -3856,16 +3848,25 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 			goto failed_mount2;
 		}
 	}
+
+	ext4_ext_init(sb);
+	err = ext4_mb_init(sb);
+	if (err) {
+		ext4_msg(sb, KERN_ERR, "failed to initialize mballoc (%d)",
+			 err);
+		goto failed_mount2;
+	}
+
 	if (!ext4_check_descriptors(sb, &first_not_zeroed)) {
 		ext4_msg(sb, KERN_ERR, "group descriptors corrupted!");
-		goto failed_mount2;
+		goto failed_mount2a;
 	}
 	if (EXT4_HAS_INCOMPAT_FEATURE(sb, EXT4_FEATURE_INCOMPAT_FLEX_BG))
 		if (!ext4_fill_flex_info(sb)) {
 			ext4_msg(sb, KERN_ERR,
 			       "unable to initialize "
 			       "flex_bg meta info!");
-			goto failed_mount2;
+			goto failed_mount2a;
 		}
 
 	sbi->s_gdb_count = db_count;
@@ -4200,12 +4201,12 @@ failed_mount3:
 	percpu_counter_destroy(&sbi->s_extent_cache_cnt);
 	if (sbi->s_mmp_tsk)
 		kthread_stop(sbi->s_mmp_tsk);
+failed_mount2a:
+	ext4_mb_release(sb);
 failed_mount2:
 	for (i = 0; i < db_count; i++)
 		brelse(sbi->s_group_desc[i]);
 	ext4_kvfree(sbi->s_group_desc);
-
-	ext4_mb_release(sb);
 failed_mount:
 	ext4_ext_release(sb);
 	if (sbi->s_chksum_driver)
