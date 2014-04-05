@@ -3850,8 +3850,10 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 	}
 
 	/*
-	 * set up enough so that it can read an inode
+	 * set up enough so that it can read an inode,
+	 * and create new inode for buddy allocator
 	 */
+	sbi->s_gdb_count = db_count;
 	if (!test_opt(sb, NOLOAD) &&
 	    EXT4_HAS_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_HAS_JOURNAL))
 		sb->s_op = &ext4_sops;
@@ -3878,7 +3880,6 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
 			goto failed_mount2a;
 		}
 
-	sbi->s_gdb_count = db_count;
 	get_random_bytes(&sbi->s_next_generation, sizeof(u32));
 	spin_lock_init(&sbi->s_next_gen_lock);
 
