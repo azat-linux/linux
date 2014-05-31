@@ -744,7 +744,7 @@ static int _ext4_get_block(struct inode *inode, sector_t iblock,
 		bh->b_state = (bh->b_state & ~EXT4_MAP_FLAGS) | map.m_flags;
 		if (io_end && io_end->flag & EXT4_IO_END_UNWRITTEN)
 			set_buffer_defer_completion(bh);
-		bh->b_size = inode->i_sb->s_blocksize * map.m_len;
+		bh->b_size *= map.m_len;
 		ret = 0;
 	}
 	if (started)
