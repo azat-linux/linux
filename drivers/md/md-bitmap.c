@@ -1394,6 +1394,8 @@ __acquires(bitmap->lock)
 
 int md_bitmap_startwrite(struct bitmap *bitmap, sector_t offset, unsigned long sectors, int behind)
 {
+	/** lock of the mddev (but without racing), to remove race with destroy */
+
 	if (!bitmap)
 		return 0;
 
