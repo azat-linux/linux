@@ -1497,7 +1497,7 @@ void md_bitmap_endwrite(struct bitmap *bitmap, sector_t offset,
 			*bmc |= NEEDED_MASK;
 
 		if (COUNTER(*bmc) == COUNTER_MAX)
-			wake_up(&bitmap->overflow_wait);
+			wake_up_all(&bitmap->overflow_wait);
 
 		(*bmc)--;
 		if (*bmc <= 2) {
