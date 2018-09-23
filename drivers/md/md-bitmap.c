@@ -1423,6 +1423,9 @@ int md_bitmap_startwrite(struct bitmap *bitmap, sector_t offset, unsigned long s
 
 		if (unlikely(COUNTER(*bmc) == COUNTER_MAX)) {
 			DEFINE_WAIT(__wait);
+
+			pr_warn("md/bitmap: bmc overflow: %hu (at %lu)\n", COUNTER(*bmc), blocks);
+
 			/* note that it is safe to do the prepare_to_wait
 			 * after the test as long as we do it before dropping
 			 * the spinlock.
